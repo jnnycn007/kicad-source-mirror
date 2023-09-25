@@ -39,7 +39,6 @@ class PCB_IO;
 class FOOTPRINT;
 class PROJECT;
 class PROGRESS_REPORTER;
-class REPORTER;
 
 /**
  * A factory which returns an instance of a #PLUGIN.
@@ -47,16 +46,15 @@ class REPORTER;
 class PCB_IO_MGR : public IO_MGR
 {
 public:
-
     /**
      * The set of file types that the PCB_IO_MGR knows about, and for which there has been a
      * plugin written, in alphabetical order.
      */
     enum PCB_FILE_T
     {
-        PCB_FILE_UNKNOWN = 0,   ///< 0 is not a legal menu id on Mac
-        KICAD_SEXP,             ///< S-expression Pcbnew file format.
-        LEGACY,                 ///< Legacy Pcbnew file formats prior to s-expression.
+        PCB_FILE_UNKNOWN = 0, ///< 0 is not a legal menu id on Mac
+        KICAD_SEXP,           ///< S-expression Pcbnew file format.
+        LEGACY,               ///< Legacy Pcbnew file formats prior to s-expression.
         ALTIUM_CIRCUIT_MAKER,
         ALTIUM_CIRCUIT_STUDIO,
         ALTIUM_DESIGNER,
@@ -70,6 +68,7 @@ public:
         SOLIDWORKS_PCB,
         IPC2581,
         ODBPP,
+        ALLEGRO,
         // add your type here.
 
         // etc.
@@ -83,55 +82,51 @@ public:
      */
     class PLUGIN_REGISTRY
     {
-        public:
-            struct ENTRY
-            {
-                PCB_FILE_T m_type;
-                std::function<PCB_IO*(void)> m_createFunc;
-                wxString m_name;
-            };
+    public:
+        struct ENTRY
+        {
+            PCB_FILE_T                     m_type;
+            std::function<PCB_IO*( void )> m_createFunc;
+            wxString                       m_name;
+        };
 
-            static PLUGIN_REGISTRY *Instance()
-            {
-                static PLUGIN_REGISTRY *self = nullptr;
+        static PLUGIN_REGISTRY* Instance()
+        {
+            static PLUGIN_REGISTRY* self = nullptr;
 
-                if( !self )
+            if( !self )
+            {
+                self = new PLUGIN_REGISTRY;
+            }
+            return self;
+        }
+
+        void Register( PCB_FILE_T aType, const wxString& aName, std::function<PCB_IO*( void )> aCreateFunc )
+        {
+            ENTRY ent;
+            ent.m_type = aType;
+            ent.m_createFunc = aCreateFunc;
+            ent.m_name = aName;
+            m_plugins.push_back( ent );
+        }
+
+        PCB_IO* Create( PCB_FILE_T aFileType ) const
+        {
+            for( auto& ent : m_plugins )
+            {
+                if( ent.m_type == aFileType )
                 {
-                    self = new PLUGIN_REGISTRY;
+                    return ent.m_createFunc();
                 }
-                return self;
             }
 
-            void Register( PCB_FILE_T aType, const wxString& aName,
-                           std::function<PCB_IO*(void)> aCreateFunc )
-            {
-                ENTRY ent;
-                ent.m_type = aType;
-                ent.m_createFunc = aCreateFunc;
-                ent.m_name = aName;
-                m_plugins.push_back( ent );
-            }
+            return nullptr;
+        }
 
-            PCB_IO* Create( PCB_FILE_T aFileType ) const
-            {
-                for( auto& ent : m_plugins )
-                {
-                    if ( ent.m_type == aFileType )
-                    {
-                        return ent.m_createFunc();
-                    }
-                }
+        const std::vector<ENTRY>& AllPlugins() const { return m_plugins; }
 
-                return nullptr;
-            }
-
-            const std::vector<ENTRY>& AllPlugins() const
-            {
-                return m_plugins;
-            }
-
-        private:
-            std::vector<ENTRY> m_plugins;
+    private:
+        std::vector<ENTRY> m_plugins;
     };
 
     /**
@@ -145,11 +140,10 @@ public:
      */
     struct REGISTER_PLUGIN
     {
-         REGISTER_PLUGIN( PCB_FILE_T aType, const wxString& aName,
-                          std::function<PCB_IO*(void)> aCreateFunc )
-         {
-             PLUGIN_REGISTRY::Instance()->Register( aType, aName, aCreateFunc );
-         }
+        REGISTER_PLUGIN( PCB_FILE_T aType, const wxString& aName, std::function<PCB_IO*( void )> aCreateFunc )
+        {
+            PLUGIN_REGISTRY::Instance()->Register( aType, aName, aCreateFunc );
+        }
     };
 
 
@@ -203,9 +197,8 @@ public:
      * @throw IO_ERROR if the #PLUGIN cannot be found, file cannot be found, or file cannot
      *                 be loaded.
      */
-    static BOARD* Load( PCB_FILE_T aFileType, const wxString& aFileName,
-                        BOARD* aAppendToMe = nullptr, const std::map<std::string, UTF8>* aProperties = nullptr,
-                        PROJECT* aProject = nullptr,
+    static BOARD* Load( PCB_FILE_T aFileType, const wxString& aFileName, BOARD* aAppendToMe = nullptr,
+                        const std::map<std::string, UTF8>* aProperties = nullptr, PROJECT* aProject = nullptr,
                         PROGRESS_REPORTER* aProgressReporter = nullptr );
 
     /**

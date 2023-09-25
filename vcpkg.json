@@ -8,6 +8,7 @@
     "boost-bimap",
     "boost-filesystem",
     "boost-functional",
+    "boost-interprocess",
     "boost-iterator",
     "boost-locale",
     "boost-optional",

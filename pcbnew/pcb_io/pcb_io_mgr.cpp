@@ -36,6 +36,7 @@
 #include <pcb_io/kicad_sexpr/pcb_io_kicad_sexpr.h>
 #include <pcb_io/kicad_legacy/pcb_io_kicad_legacy.h>
 #include <pcb_io/pcad/pcb_io_pcad.h>
+#include <pcb_io/allegro/pcb_io_allegro.h>
 #include <pcb_io/altium/pcb_io_altium_circuit_maker.h>
 #include <pcb_io/altium/pcb_io_altium_circuit_studio.h>
 #include <pcb_io/altium/pcb_io_altium_designer.h>
@@ -49,9 +50,8 @@
 #include <reporter.h>
 
 
-
-#define FMT_UNIMPLEMENTED   _( "Plugin \"%s\" does not implement the \"%s\" function." )
-#define FMT_NOTFOUND        _( "Plugin type \"%s\" is not found." )
+#define FMT_UNIMPLEMENTED _( "Plugin \"%s\" does not implement the \"%s\" function." )
+#define FMT_NOTFOUND _( "Plugin type \"%s\" is not found." )
 
 
 // Some day plugins might be in separate DLL/DSOs, simply because of numbers of them
@@ -81,7 +81,7 @@ const wxString PCB_IO_MGR::ShowType( PCB_FILE_T aType )
 
     for( const auto& plugin : plugins )
     {
-        if ( plugin.m_type == aType )
+        if( plugin.m_type == aType )
         {
             return plugin.m_name;
         }
@@ -97,7 +97,7 @@ PCB_IO_MGR::PCB_FILE_T PCB_IO_MGR::EnumFromStr( const wxString& aType )
 
     for( const auto& plugin : plugins )
     {
-        if ( plugin.m_name == aType )
+        if( plugin.m_name == aType )
         {
             return plugin.m_type;
         }
@@ -158,12 +158,12 @@ PCB_IO_MGR::PCB_FILE_T PCB_IO_MGR::GuessPluginTypeFromLibPath( const wxString& a
 
 
 BOARD* PCB_IO_MGR::Load( PCB_FILE_T aFileType, const wxString& aFileName, BOARD* aAppendToMe,
-                     const std::map<std::string, UTF8>* aProperties, PROJECT* aProject,
-                     PROGRESS_REPORTER* aProgressReporter )
+                         const std::map<std::string, UTF8>* aProperties, PROJECT* aProject,
+                         PROGRESS_REPORTER* aProgressReporter )
 {
     IO_RELEASER<PCB_IO> pi( PluginFind( aFileType ) );
 
-    if( pi )  // test pi->plugin
+    if( pi ) // test pi->plugin
     {
         pi->SetProgressReporter( aProgressReporter );
         return pi->LoadBoard( aFileName, aAppendToMe, aProperties, aProject );
@@ -174,13 +174,13 @@ BOARD* PCB_IO_MGR::Load( PCB_FILE_T aFileType, const wxString& aFileName, BOARD*
 
 
 void PCB_IO_MGR::Save( PCB_FILE_T aFileType, const wxString& aFileName, BOARD* aBoard,
-                   const std::map<std::string, UTF8>* aProperties )
+                       const std::map<std::string, UTF8>* aProperties )
 {
     IO_RELEASER<PCB_IO> pi( PluginFind( aFileType ) );
 
     if( pi )
     {
-        pi->SaveBoard( aFileName, aBoard, aProperties );  // virtual
+        pi->SaveBoard( aFileName, aBoard, aProperties ); // virtual
         return;
     }
 
@@ -198,8 +198,8 @@ bool PCB_IO_MGR::ConvertLibrary( std::map<std::string, UTF8>* aOldFileProps, con
 
     IO_RELEASER<PCB_IO> oldFilePI( PCB_IO_MGR::PluginFind( oldFileType ) );
     IO_RELEASER<PCB_IO> kicadPI( PCB_IO_MGR::PluginFind( PCB_IO_MGR::KICAD_SEXP ) );
-    wxArrayString fpNames;
-    wxFileName newFileName( aNewFilePath );
+    wxArrayString       fpNames;
+    wxFileName          newFileName( aNewFilePath );
 
     if( newFileName.HasExt() )
     {
@@ -216,12 +216,12 @@ bool PCB_IO_MGR::ConvertLibrary( std::map<std::string, UTF8>* aOldFileProps, con
     {
         bool bestEfforts = false; // throw on first error
         oldFilePI->FootprintEnumerate( fpNames, aOldFilePath, bestEfforts, aOldFileProps );
-        std::map<std::string, UTF8> props { { "skip_cache_validation", "" } };
+        std::map<std::string, UTF8> props{ { "skip_cache_validation", "" } };
 
-        for ( const wxString& fpName : fpNames )
+        for( const wxString& fpName : fpNames )
         {
             std::unique_ptr<const FOOTPRINT> fp(
-                oldFilePI->GetEnumeratedFootprint( aOldFilePath, fpName, aOldFileProps ) );
+                    oldFilePI->GetEnumeratedFootprint( aOldFilePath, fpName, aOldFileProps ) );
 
             try
             {
@@ -233,8 +233,7 @@ bool PCB_IO_MGR::ConvertLibrary( std::map<std::string, UTF8>* aOldFileProps, con
                 // as a fatal error.
                 // this can be just a illegal filename used for the footprint
                 if( aReporter )
-                    aReporter->Report( wxString::Format( "Footprint \"%s\" can't be saved. Skipped",
-                                                         fpName ),
+                    aReporter->Report( wxString::Format( "Footprint \"%s\" can't be saved. Skipped", fpName ),
                                        SEVERITY::RPT_SEVERITY_WARNING );
             }
         }
@@ -242,9 +241,8 @@ bool PCB_IO_MGR::ConvertLibrary( std::map<std::string, UTF8>* aOldFileProps, con
     catch( IO_ERROR& io_err )
     {
         if( aReporter )
-            aReporter->Report( wxString::Format( "Library '%s' Convert err: \"%s\"",
-                                             aOldFilePath, io_err.What() ),
-                                SEVERITY::RPT_SEVERITY_ERROR );
+            aReporter->Report( wxString::Format( "Library '%s' Convert err: \"%s\"", aOldFilePath, io_err.What() ),
+                               SEVERITY::RPT_SEVERITY_ERROR );
         return false;
     }
     catch( ... )
@@ -271,6 +269,11 @@ static PCB_IO_MGR::REGISTER_PLUGIN registerLegacyPlugin(
         []() -> PCB_IO* { return new PCB_IO_KICAD_LEGACY; } );
 
 // Keep non-KiCad plugins in alphabetical order
+
+static PCB_IO_MGR::REGISTER_PLUGIN registerAllegroPlugin(
+        PCB_IO_MGR::ALLEGRO,
+        wxT( "Cadence Allegro" ),
+        []() -> PCB_IO* { return new PCB_IO_ALLEGRO; } );
 
 static PCB_IO_MGR::REGISTER_PLUGIN registerAltiumCircuitMakerPlugin(
         PCB_IO_MGR::ALTIUM_CIRCUIT_MAKER,
