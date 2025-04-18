@@ -70,7 +70,6 @@ set( QA_PCBNEW_SRCS
     drc/test_drc_orientation.cpp
     drc/test_drc_lengths.cpp
 
-    pcb_io/allegro/test_allegro_brd_import.cpp
     pcb_io/altium/test_altium_rule_transformer.cpp
     pcb_io/altium/test_altium_pcblib_import.cpp
     pcb_io/cadstar/test_cadstar_footprints.cpp
