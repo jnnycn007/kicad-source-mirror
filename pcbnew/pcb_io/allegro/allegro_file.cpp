@@ -30,7 +30,6 @@
 ALLEGRO_FILE::ALLEGRO_FILE( const wxString& aFilePath )
 {
     file_mapping mapped_file;
-
     try
     {
 #ifdef __WINDOWS__
@@ -43,6 +42,5 @@ ALLEGRO_FILE::ALLEGRO_FILE( const wxString& aFilePath )
     {
         THROW_IO_ERROR( _( "Failed to open file." ) );
     }
-
     region = mapped_region( mapped_file, read_only );
 };
